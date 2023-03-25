@@ -1,22 +1,17 @@
-test_that("tail works on masked vectors", {
-  x = MaskedArray(1:10)
-  y = tail(x, n=5)
-  expect_s4_class(y, "MaskedArray")
-  expect_identical(x@value, y@value)
-  expect_equal(apply_mask(y), 6:10)
-})
-
 test_that("masked_array indexing works on vectors", {
-  x = MaskedArray(1:10)
+  x = MaskedArray(1:10, dynamic_mask = FALSE)
   y = x[2:8][2:4]
   expect_s4_class(y, "MaskedArray")
-  expect_identical(x@value, y@value)
+  # Indexing should change the original vector, and the mask
+  expect_false(identical(x@value, y@value))
+  expect_false(y@dynamic_mask)
   expect_equal(y@masks[[1]], 3:5)
+  expect_equal(y@value, 3:5)
   expect_equal(apply_mask(y), 3:5)
 })
 
 test_that("masked_array indexing works on matrices", {
-  x = MaskedArray(matrix(1:16, nrow=4))
+  x = MaskedArray(matrix(1:16, nrow=4), dynamic_mask = FALSE)
   y = x[2:3, 2:3]
   expect_s4_class(y, "MaskedArray")
   expect_identical(x@value, y@value)
@@ -27,7 +22,7 @@ test_that("masked_array indexing works on matrices", {
 })
 
 test_that("masked_array indexing works on data frames", {
-  x = MaskedArray(iris)
+  x = MaskedArray(iris, dynamic_mask = FALSE)
   idx_1 = 2:5
   idx_2 = c("Petal.Length", "Sepal.Length")
   y = x[idx_1, idx_2]
