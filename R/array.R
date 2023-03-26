@@ -89,6 +89,24 @@ setMethod("[", signature=c(x="MaskedArray"), function(x, i, j, ...){
   }
 })
 
+#' Maps indices applied to a masked array back to the original array
+map_indices = function(index, mask, axis_len){
+  # Make a vector with the same length as the unmasked axis,
+  # which is 0 everywhere except where an element is masked out
+  masked_out = rep_len(0, axis_len)
+  masked_out[invert_integer_indices(mask, axis_len)] = 1
+  # desync maps an index to the number of masked elements that precede that index
+  desync = cumsum(masked_out)
+  # desync[mask] is a post-mask array showing how each element of the array
+  # has been shifted.
+  # We correct the indices by adding on the amount each index has been shifted
+  index + desync[mask][index]
+}
+
+invert_integer_indices = function(indices, len){
+  seq_len(len)[-indices]
+}
+
 default_mask = function(value){
   lapply(gdim(value), seq_len)
 }
