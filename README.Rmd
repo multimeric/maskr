@@ -20,38 +20,123 @@ knitr::opts_chunk$set(
 [![CRAN status](https://www.r-pkg.org/badges/version/maskr)](https://CRAN.R-project.org/package=maskr)
 <!-- badges: end -->
 
-The goal of maskr is to ...
+The `maskr` package provides a masked array type, which is either a vector, array, matrix, or data frame which has a *mask*.
+The mask is a list of indices, one for each axis of the array, which defines the parts of the array to show. 
+All other parts then become invisible.
 
 ## Installation
 
 You can install the development version of maskr from [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("multimeric/dotfiles")
+# install.packages("remotes")
+remotes::install_github("multimeric/maskr")
 ```
 
-## Example
+## Basics
 
-This is a basic example which shows you how to solve a common problem:
+You can create a `MaskedArray` using the constructor function, which takes firstly
+the array to mask, and secondly a list of mask vectors, one for each dimension of the array.
+For a masked vector, the mask is a list of one vector.
+
+Here we define an inner array with 10 elements, but our mask, which is a vector of indices to show, hides `"a"` and `"j"`:
 
 ```{r example}
-library(maskr)
-## basic example code
+x = maskr::MaskedArray(letters[1:10], masks=list(2:9))
+x
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+For most purposes, the array acts the same as `c("b", "c", "d", "e", "f", "g", "h", "i")`:
 
-```{r cars}
-summary(cars)
+```{r}
+length(x)
+```
+```{r}
+x[[1]]
 ```
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this. You could also use GitHub Actions to re-render `README.Rmd` every time you push. An example workflow can be found here: <https://github.com/r-lib/actions/tree/v1/examples>.
+However, we can unmask the array the return to the original form:
 
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
+```{r}
+maskr::unmask(x)
 ```
 
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
+## Use Cases
+
+One use case for `maskr` is hiding some kind of bad data, like outliers.
+
+For example, let's start with some data that includes two outliers
+
+```{r}
+set.seed(1)
+x = c(
+  rnorm(10),
+  rnorm(2, mean=2)
+)
+x
+```
+
+We could identify these outliers using some kind of test. 
+In this case we test that all the values come from from a $N(0, 1)$ distribution:
+
+```{r}
+outliers = pnorm(x, lower.tail = F) < 0.05
+outliers
+```
+
+Then we can use that outlier list as a mask. 
+Note that logical vectors are also legal masks!
+
+```{r}
+masked = maskr::MaskedArray(x, mask = list(!outliers))
+masked
+```
+
+We might then want to find the mean of the non-outliers:
+
+```{r}
+mean(masked)
+```
+
+## Subsetting
+
+Another useful feature of `maskr` is that, when you subset an array, the mask shrinks to hide the excluded elements:
+
+```{r}
+x[5:6]
+```
+
+What this means, is that you can take a sequence of slices from the array:
+
+```{r}
+y = x[-1][-1][-1]
+```
+
+We can compute the final subset:
+```{r}
+maskr::apply_mask(y)
+```
+But also revert the mask:
+```{r}
+maskr::unmask(y)
+```
+
+## Multidimensional Arrays
+
+We can mask a matrix. If we do, the mask needs to be a list of two vectors:
+
+```{r}
+x = maskr::MaskedArray(matrix(rnorm(n=16), nrow=4), list(1:2, 2:3))
+x
+```
+```{r}
+maskr::apply_mask(x)
+```
+
+We can also mask a `data.frame` in the same way. 
+Note that we can use a character vector to select certain columns, as you might expect:
+
+```{r}
+x = maskr::MaskedArray(iris, list(10:15, c("Petal.Length", "Sepal.Length")))
+maskr::apply_mask(x)
+```

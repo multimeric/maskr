@@ -13,6 +13,10 @@ test_that("masked_array indexing works on vectors", {
   expect_identical(x@value, y@value)
   expect_equal(y@masks[[1]], 3:5)
   expect_equal(apply_mask(y), 3:5)
+  expect_equal(as.double(y), 3:5)
+  expect_equal(as.vector(y), 3:5)
+  expect_equal(as.numeric(y), 3:5)
+  expect_equal(length(y), 3)
 })
 
 test_that("masked_array indexing works on matrices", {
@@ -23,7 +27,11 @@ test_that("masked_array indexing works on matrices", {
   expect_equal(y@masks[[1]], 2:3)
   expect_equal(y@masks[[2]], 2:3)
   # After applying the mask, we should only have the middle 2x2 matrix
-  expect_equal(apply_mask(y), matrix(c(6L, 7L, 10L, 11L), nrow=2))
+  post_mask = matrix(c(6L, 7L, 10L, 11L), nrow=2)
+  expect_equal(as.matrix(y), post_mask)
+  expect_equal(apply_mask(y), post_mask)
+  # Some methods should consider the post-mask object
+  expect_equal(dim(y), c(2, 2))
 })
 
 test_that("masked_array indexing works on data frames", {
