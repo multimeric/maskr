@@ -92,7 +92,7 @@ masked = maskr::MaskedArray(x, mask = list(!outliers))
 masked
 ```
 
-We might then want to find the mean of the non-outliers:
+We can then find the mean of the non-outliers directly on the masked array:
 
 ```{r}
 mean(masked)
@@ -100,12 +100,15 @@ mean(masked)
 
 ## Subsetting
 
-Another useful feature of `maskr` is that, when you subset an array, the mask shrinks to hide the excluded elements:
+Another useful feature of `maskr` is that, when you subset an array, the mask shrinks to hide the excluded elements. 
+Let's define `x` as in the first section:
 
 ```{r}
+x = maskr::MaskedArray(letters[1:10], masks=list(2:9))
 x[5:6]
 ```
 
+Notice how, the resulting object is still a length-10 vector, but now all but 2 items are hidden.
 What this means, is that you can take a sequence of slices from the array:
 
 ```{r}

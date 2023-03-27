@@ -87,10 +87,10 @@ lapply(APPLIED_MASK_S3, function(generic_name){
   package = Filter(function(env){
     environmentName(env) == "maskr"
   }, sys.frames())[[1]]
-  assign(name, envir = package, value = function(x, ...){
+  assign(name, envir = package, value = function(...){
     # Setting x allows us to dispatch on its new value
     x = apply_mask(x)
-    # callGeneric will use the arguments that actually exist in the function
+    # NextMethod will use the arguments that actually exist in the function
     # environment, even though we can't see them
     NextMethod()
   })

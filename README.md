@@ -110,7 +110,8 @@ masked
 #>  [1]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE FALSE FALSE
 ```
 
-We might then want to find the mean of the non-outliers:
+We can then find the mean of the non-outliers directly on the masked
+array:
 
 ``` r
 mean(masked)
@@ -120,15 +121,24 @@ mean(masked)
 ## Subsetting
 
 Another useful feature of `maskr` is that, when you subset an array, the
-mask shrinks to hide the excluded elements:
+mask shrinks to hide the excluded elements. Let’s define `x` as in the
+first section:
 
 ``` r
+x = maskr::MaskedArray(letters[1:10], masks=list(2:9))
 x[5:6]
-#> [1]  0.3295078 -0.8204684
+#> An object of class "MaskedArray"
+#> Slot "value":
+#>  [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j"
+#> 
+#> Slot "masks":
+#> [[1]]
+#> [1] 6 7
 ```
 
-What this means, is that you can take a sequence of slices from the
-array:
+Notice how, the resulting object is still a length-10 vector, but now
+all but 2 items are hidden. What this means, is that you can take a
+sequence of slices from the array:
 
 ``` r
 y = x[-1][-1][-1]
@@ -138,14 +148,14 @@ We can compute the final subset:
 
 ``` r
 maskr::apply_mask(y)
-#> NULL
+#> [1] "e" "f" "g" "h" "i"
 ```
 
 But also revert the mask:
 
 ``` r
 maskr::unmask(y)
-#> NULL
+#>  [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j"
 ```
 
 ## Multidimensional Arrays
