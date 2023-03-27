@@ -1,4 +1,4 @@
-setClass("MaskedArray", slots=c(value="ANY", masks="list", dynamic_mask="logical"))
+setClass("MaskedArray", slots=c(value="ANY", masks="list"))
 
 #' MaskedArray constructor function
 #' @param value An array-like object (vector, matrix, array, data.frame etc) to
@@ -10,15 +10,9 @@ setClass("MaskedArray", slots=c(value="ANY", masks="list", dynamic_mask="logical
 #' @param masks A list of vectors to use as the initial mask, one for each
 #'   dimension of `value`. `mask` and `masks` cannot both be specified. The
 #'   requirements for the `mask` parameter also apply to each constituent vector
-#' @param dynamic_mask A scalar logical. If `TRUE`, indexing the `MaskedArray`
-#'   will return a new `MaskedArray` which contains the exact same `data` with
-#'   no elements removed, but with a mask that excludes elements that were
-#'   unselected.  If `FALSE`, indexing the `MaskedArray` will return a new
-#'   `MaskedArray` with a reduced `value`, and only the parts of the mask that
-#'   overlap the new slice will persist. Refer to the vignette for an example.
 #' @export
-MaskedArray = function(value, masks = default_mask(value), dynamic_mask=TRUE){
-  new("MaskedArray", value=value, masks=masks, dynamic_mask=dynamic_mask)
+MaskedArray = function(value, masks = default_mask(value)){
+  new("MaskedArray", value=value, masks=masks)
 }
 
 setValidity("MaskedArray", function(object){
@@ -57,55 +51,24 @@ setMethod("[", signature=c(x="MaskedArray"), function(x, i, j, ...){
     return(do.call(`[`, c(list(x@value), indices)))
   }
 
-  if (x@dynamic_mask){
-    MaskedArray(
-      value = x@value,
-      masks = lapply(seq_along(x@masks), function(i){
-        # Generate a vector whose length is the length of the current dimension.
-        # To this vector, apply the current mask, then apply the new index.
-        # The result will be an integer vector whose values are the indices
-        # to preserve.
-        all_indices = seq_len(dims[[i]])
-        if (is.character(indices[[i]])){
-          names(all_indices) = dim_names[[i]]
-          unname(all_indices[x@masks[[i]]][indices[[i]]])
-        }
-        else {
-          all_indices[x@masks[[i]]][indices[[i]]]
-        }
-      }),
-      dynamic_mask = x@dynamic_mask
-    )
-  }
-  else {
-    MaskedArray(
-      # Apply the indices to the array like it was unmasked
-      value = do.call(`[`, c(list(x@value), indices)),
-      masks = lapply(seq_along(x@masks), function(i){
-        x@masks[[i]][indices[[i]]]
-      }),
-      dynamic_mask = x@dynamic_mask
-    )
-  }
+  MaskedArray(
+    value = x@value,
+    masks = lapply(seq_along(x@masks), function(i){
+      # Generate a vector whose length is the length of the current dimension.
+      # To this vector, apply the current mask, then apply the new index.
+      # The result will be an integer vector whose values are the indices
+      # to preserve.
+      all_indices = seq_len(dims[[i]])
+      if (is.character(indices[[i]])){
+        names(all_indices) = dim_names[[i]]
+        unname(all_indices[x@masks[[i]]][indices[[i]]])
+      }
+      else {
+        all_indices[x@masks[[i]]][indices[[i]]]
+      }
+    })
+  )
 })
-
-#' Maps indices applied to a masked array back to the original array
-map_indices = function(index, mask, axis_len){
-  # Make a vector with the same length as the unmasked axis,
-  # which is 0 everywhere except where an element is masked out
-  masked_out = rep_len(0, axis_len)
-  masked_out[invert_integer_indices(mask, axis_len)] = 1
-  # desync maps an index to the number of masked elements that precede that index
-  desync = cumsum(masked_out)
-  # desync[mask] is a post-mask array showing how each element of the array
-  # has been shifted.
-  # We correct the indices by adding on the amount each index has been shifted
-  index + desync[mask][index]
-}
-
-invert_integer_indices = function(indices, len){
-  seq_len(len)[-indices]
-}
 
 default_mask = function(value){
   lapply(gdim(value), seq_len)
